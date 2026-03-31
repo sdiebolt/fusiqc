@@ -1,5 +1,6 @@
+[![PyPI version](https://img.shields.io/pypi/v/fusiqc)](https://pypi.org/project/fusiqc/)
+[![Python versions](https://img.shields.io/pypi/pyversions/fusiqc)](https://pypi.org/project/fusiqc/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
-[![Python versions](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue)](https://www.python.org/)
 
 # fUSIQC
 
