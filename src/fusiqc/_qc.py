@@ -7,6 +7,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import confusius as cf
+import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -130,7 +131,7 @@ def _save_map_plot(
     )
     try:
         figure.patch.set_alpha(0.0)
-        subfig = figure.subfigures(1, 1)
+        subfig: matplotlib.figure.Figure = figure.subfigures(1, 1)[0]
         subfig.patch.set_alpha(0.0)
         ax = subfig.subplots(1, 1)
         if vmin is None or vmax is None:

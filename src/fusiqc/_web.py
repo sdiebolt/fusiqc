@@ -13,7 +13,7 @@ from wsgiref.simple_server import make_server
 from rich.console import Console
 
 from fusiqc._config import QcConfig
-from fusiqc._dataset import get_session_label_from_pwd_path
+from fusiqc._dataset import PwdRecording, get_session_label_from_pwd_path
 from fusiqc._qc import (
     QC_PANELS,
     get_qc_plot_paths,
@@ -95,21 +95,15 @@ def _serve_qc_plot(
         start_response("404 Not Found", [("Content-Type", "text/plain; charset=utf-8")])
         return [b"QC plot not found."]
     recording = Path(pwd_path)
-    plot_path = get_qc_plot_paths(
-        config,
-        type(
-            "Recording",
-            (),
-            {
-                "pwd_path": recording,
-                "session_label": get_session_label_from_pwd_path(recording),
-                "subject": recording.parts[-4].removeprefix("sub-"),
-                "session": recording.parts[-3].removeprefix("ses-"),
-                "task": "",
-                "run": "",
-            },
-        )(),
-    )[panel]
+    rec = PwdRecording(
+        pwd_path=recording,
+        session_label=get_session_label_from_pwd_path(recording),
+        subject=recording.parts[-4].removeprefix("sub-"),
+        session=recording.parts[-3].removeprefix("ses-"),
+        task="",
+        run="",
+    )
+    plot_path = get_qc_plot_paths(config, rec)[panel]
     figures_root = config.figures_dir.resolve()
     if not plot_path.exists() or not plot_path.resolve().is_relative_to(figures_root):
         start_response("404 Not Found", [("Content-Type", "text/plain; charset=utf-8")])
