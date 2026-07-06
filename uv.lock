@@ -640,7 +640,7 @@ wheels = [
 
 [[package]]
 name = "confusius"
-version = "0.0.1a21"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "brainglobe-atlasapi" },
@@ -653,9 +653,12 @@ dependencies = [
     { name = "joblib-progress" },
     { name = "matplotlib" },
     { name = "napari", extra = ["all"] },
+    { name = "napari-video" },
     { name = "nibabel" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "pooch" },
+    { name = "requests" },
     { name = "rich" },
     { name = "scikit-learn" },
     { name = "scipy" },
@@ -663,9 +666,9 @@ dependencies = [
     { name = "xarray", extra = ["complete"] },
     { name = "zarr" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/db/d4/397c48807ee4bea475d24d3195822e402841e4c803557081e53c1b3608bf/confusius-0.0.1a21.tar.gz", hash = "sha256:1af267c0ea6c76dc5ece88ddc1cf911ea536d4ceb5bd57ee0b32c051d61e1518", size = 259185, upload-time = "2026-03-30T17:07:16.999Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9e/db/6e7297aabea5e81a948fe7ca0c57d4a15f5a6e7b8a2c22f2bd533e709478/confusius-0.4.0.tar.gz", hash = "sha256:c52f8174f7fd90b5e2110dd15f3d4e85ab1f57c00cb1500cf894a9fdd5385f78", size = 339727, upload-time = "2026-06-25T16:57:31.046Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/52/63/e599cf8e64c11ddf100db431b6fd1c6c05414bb519d945572298091dc5aa/confusius-0.0.1a21-py3-none-any.whl", hash = "sha256:d2a4f971704fc7515501e2d4c5409c478f9b7efa7895cf3e6b7958f6681a72c2", size = 314367, upload-time = "2026-03-30T17:07:17.931Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/98/d7a2e4245b27d6ad44d1442bd5efa3c56c092f4391c529c5f605e633ac14/confusius-0.4.0-py3-none-any.whl", hash = "sha256:50828e78ac3cc5f9cbafed94b0cfe1a708e4342f7f68a249ae9563e11c113cfa", size = 421338, upload-time = "2026-06-25T16:57:29.588Z" },
 ]
 
 [[package]]
@@ -1086,7 +1089,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "confusius", specifier = "==0.0.1a21" },
+    { name = "confusius", specifier = ">=0.4.0" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pybids", specifier = ">=0.18.1" },
     { name = "rich", specifier = ">=14.2.0" },
@@ -2183,6 +2186,20 @@ wheels = [
 ]
 
 [[package]]
+name = "napari-video"
+version = "0.2.13"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "pyvideoreader" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2b/08/9b21abdfb6bfee7d2efcf5525bf75e5f8a66c15179aa22e2bac6c0e6e312/napari_video-0.2.13.tar.gz", hash = "sha256:0a81ea583d8562d5ed2226b323a77f7953a98aa1b2276213788352c18c16b29c", size = 5488, upload-time = "2025-08-20T09:13:29.886Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1d/fd/6de9f181a51467d9b68fb2bb7eab2bcaaeec305665496227b3595418f96c/napari_video-0.2.13-py3-none-any.whl", hash = "sha256:ded8ffc1a5557ace61ae03b9695fdf1a7f2a055f09f844825eff921e57fcfc33", size = 4727, upload-time = "2025-08-20T09:13:28.184Z" },
+]
+
+[[package]]
 name = "narwhals"
 version = "2.18.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2507,6 +2524,26 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7d/ff/0559b586423d9a59feac52c2261501106dcd61e45214862de5fbb03b78cb/numpy_groupies-0.11.3.tar.gz", hash = "sha256:aed4afdad55e856b9e737fe4b4673c77e47c2f887c3663a18baaa200407c23e0", size = 159159, upload-time = "2025-05-22T11:47:58.364Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b0/e0/760e73c111193db5ca37712a148e4807d1b0c60302ab31e4ada6528ca34d/numpy_groupies-0.11.3-py3-none-any.whl", hash = "sha256:d4065dd5d56fda941ad5a7c80a7f80b49f671ed148aaa3e243a0e4caa71adcb3", size = 40784, upload-time = "2025-05-22T11:47:56.997Z" },
+]
+
+[[package]]
+name = "opencv-python-headless"
+version = "5.0.0.93"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1d/99/76b7c80252aa83c1af16393454aafd125a0287101afe8deb0a6821af0e30/opencv_python_headless-5.0.0.93.tar.gz", hash = "sha256:b82f9831daab90b725c7c1ee1b36cb5732c367096ac76d119e64e14eb70d5f3c", size = 81817738, upload-time = "2026-07-02T07:01:06.039Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/53/7c/8c8097891c509d98cd128493835c95631c80be6a8f37ed9d25716c2e16f1/opencv_python_headless-5.0.0.93-cp37-abi3-macosx_13_0_arm64.whl", hash = "sha256:030ca5e0837a2963ab36ef896baa9767eb8d2b83353fb28af5a521e40dd8756f", size = 48322581, upload-time = "2026-07-02T05:50:34.207Z" },
+    { url = "https://files.pythonhosted.org/packages/90/8c/eab2ad388c3cbab2a350c10c2ef19ce6bd099240afc31789032c996bab52/opencv_python_headless-5.0.0.93-cp37-abi3-macosx_14_0_x86_64.whl", hash = "sha256:1e55af3abfb462eeeabe5c775f12bdb36216d8a93a3583d69e6bd6e1d6ba7d00", size = 34782894, upload-time = "2026-07-02T05:51:39.856Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/78/afca939f40ffe2b2380bfa86f812b2f7d4acc5a27b27dc41b49cad7ce7b4/opencv_python_headless-5.0.0.93-cp37-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:10818d91510e05c04568ae12b5cd120779c70c01bf897b001a6221fe430df80f", size = 36521085, upload-time = "2026-07-02T06:55:24.429Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/97/8170e9819764c47e436c130d3ff6cfb73b58f923eae9d3a03d8982b04aec/opencv_python_headless-5.0.0.93-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:09a872a157c1376ab922a69bbf22f9a95bcc7b658a9d8b436a60212b02b2eeb4", size = 56563598, upload-time = "2026-07-02T06:55:47.355Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/98/1a28a7101e31801042b3098871a74b76c61581d328ef40774ff4edb53a56/opencv_python_headless-5.0.0.93-cp37-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:840bd717c21e5c11cadadc022a823315ea417f961213d06b4df010e019eb16f4", size = 39648433, upload-time = "2026-07-02T06:56:04.255Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/21/f6ef335f6e65724aa78b8d792b48d40a48c381715f1e62f5a5049e09d07e/opencv_python_headless-5.0.0.93-cp37-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:ed709fdf9aa0bd1f2ed8549e71d19449b03a675bb581eb292285f6861953be37", size = 61204038, upload-time = "2026-07-02T06:56:41.823Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/8f/b8756467ea991449a293797f6b3fa80fcfdd29598a0a60d1cd5715b96e61/opencv_python_headless-5.0.0.93-cp37-abi3-win32.whl", hash = "sha256:c6bcd96b185975ea240d22cfdb15a1f6d080cc95264cfbe2621f21bb144d89b9", size = 35411237, upload-time = "2026-07-02T05:50:12.901Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/88/763b967f7efd7226b82c9fae16d560cba049b1f0c036647e65c610fd636e/opencv_python_headless-5.0.0.93-cp37-abi3-win_amd64.whl", hash = "sha256:829717b6a95554f273e49e357cee3b3a2a26b6f4842fbc1bed2b45bdd8f87e0e", size = 43825962, upload-time = "2026-07-02T05:50:09.627Z" },
 ]
 
 [[package]]
@@ -3294,6 +3331,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/82/ed/0301aeeac3e5353ef3d94b6ec08bbcabd04a72018415dcb29e588514bba8/python_dotenv-1.2.2.tar.gz", hash = "sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3", size = 50135, upload-time = "2026-03-01T16:00:26.196Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/d7/1959b9648791274998a9c3526f6d0ec8fd2233e4d4acce81bbae76b44b2a/python_dotenv-1.2.2-py3-none-any.whl", hash = "sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a", size = 22101, upload-time = "2026-03-01T16:00:25.09Z" },
+]
+
+[[package]]
+name = "pyvideoreader"
+version = "0.5.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opencv-python-headless" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/47/7f/f92c33e37dad8594f4d05da2ce167b529709605df448bf2f75d1a7316dd7/pyvideoreader-0.5.7.tar.gz", hash = "sha256:f5fafb7760468863f08d2ee1c613a46bec5f2b0ca64af681eb313c66bb08cb47", size = 9802, upload-time = "2024-10-13T07:34:44.518Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3c/79/0ddc6c5d5a3b83c685a5cff9b53b9977007cc2604d7285e1e943f1638574/pyvideoreader-0.5.7-py3-none-any.whl", hash = "sha256:22111a5371d12d5a12529e04a5b840f1d1592bb8385227b1a0b1e86d4a4788a7", size = 7186, upload-time = "2024-10-13T07:34:42.467Z" },
 ]
 
 [[package]]

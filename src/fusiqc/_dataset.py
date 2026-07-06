@@ -54,6 +54,8 @@ def discover_pwd_recordings(config: QcConfig) -> list[PwdRecording]:
         pwd_path = Path(filename)
         if not pwd_path.name.endswith(ALLOWED_PWD_SUFFIXES):
             continue
+        if pwd_path.parent.name != "fusi":
+            continue
         entities = layout.parse_file_entities(str(pwd_path))
         recordings.append(
             PwdRecording(

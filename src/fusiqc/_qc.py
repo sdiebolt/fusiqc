@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import cast
 
 import confusius as cf
 import matplotlib.figure
@@ -131,7 +132,7 @@ def _save_map_plot(
     )
     try:
         figure.patch.set_alpha(0.0)
-        subfig: matplotlib.figure.Figure = figure.subfigures(1, 1)[0]
+        subfig = cast(matplotlib.figure.SubFigure, figure.subfigures(1, 1))
         subfig.patch.set_alpha(0.0)
         ax = subfig.subplots(1, 1)
         if vmin is None or vmax is None:
@@ -140,10 +141,9 @@ def _save_map_plot(
             preview,
             slice_mode=slice_mode,
             slice_coords=[slice_coord],
-            figure=subfig,
+            figure=cast(matplotlib.figure.Figure, subfig),
             axes=np.asarray([[ax]]),
             cmap=cmap,
-            black_bg=True,
             show_titles=False,
             show_colorbar=True,
             cbar_label=cbar_label,
@@ -185,7 +185,7 @@ def _save_carpet_plot(power_doppler: xr.DataArray, output_path: Path) -> Path:
     figure, ax = plt.subplots(figsize=(9.2, 3.8), constrained_layout=True)
     try:
         figure.patch.set_alpha(0.0)
-        power_doppler.fusi.plot.carpet(ax=ax, title=None, black_bg=True)
+        power_doppler.fusi.plot.carpet(ax=ax, title=None, bg_color="black")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         figure.savefig(output_path, dpi=150, bbox_inches="tight", transparent=True)
         return output_path
