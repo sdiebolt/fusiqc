@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
@@ -124,7 +125,7 @@ def _get_map_figsize(preview: xr.DataArray, slice_mode: str) -> tuple[float, flo
     return figure_width, figure_height
 
 
-def _save_map_plot(
+def _save_mid_slice_plot(
     data: xr.DataArray,
     output_path: Path,
     cmap: str,
@@ -132,7 +133,7 @@ def _save_map_plot(
     vmin: float | None = None,
     vmax: float | None = None,
 ) -> Path:
-    """Save one dark-themed spatial QC plot."""
+    """Save one dark-themed QC plot of the mid slice of a volume."""
     preview, slice_mode, slice_coord = _prepare_preview_map(data)
     figure = plt.figure(
         figsize=_get_map_figsize(preview, slice_mode),
@@ -199,20 +200,34 @@ def _save_carpet_plot(power_doppler: xr.DataArray, output_path: Path) -> Path:
         plt.close(figure)
 
 
-def _save_all_slices_map_plot(
+def _mean_volume_grid_shape(preview: xr.DataArray, slice_mode: str) -> tuple[int, int]:
+    """Return (nrows, ncols) with roughly twice as many columns as rows."""
+    n_slices = preview.sizes[slice_mode]
+    nrows = max(1, math.ceil(math.sqrt(n_slices / 2)))
+    ncols = math.ceil(n_slices / nrows)
+    return nrows, ncols
+
+
+def _save_mean_volume_plot(
     data: xr.DataArray,
     output_path: Path,
     cmap: str,
     cbar_label: str,
 ) -> Path:
-    """Save one dark-themed spatial QC plot showing every slice of a static volume."""
+    """Save one dark-themed QC plot of a mean volume, showing every slice."""
     preview, slice_mode, _ = _prepare_preview_map(data)
+    nrows, ncols = _mean_volume_grid_shape(preview, slice_mode)
     plotter = cf.plotting.plot_volume(
         preview,
         slice_mode=slice_mode,
         cmap=cmap,
+        vmax=0,
+        nrows=nrows,
+        ncols=ncols,
         show_colorbar=True,
         cbar_label=cbar_label,
+        show_axes=False,
+        show_titles=False,
     )
     figure = cast(matplotlib.figure.Figure, plotter.figure)
     figure.patch.set_alpha(0.0)
@@ -222,47 +237,37 @@ def _save_all_slices_map_plot(
     return output_path
 
 
-def _save_angio_plots(
-    config: QcConfig,
-    recording: PwdRecording,
-    pwd: xr.DataArray,
-) -> dict[str, Path]:
-    """Save QC plots for one angiography recording (static volume, no temporal panels)."""
-    output_paths = get_qc_plot_paths(config, recording)
-    if "time" in pwd.dims:
-        CONSOLE.log(
-            f"[yellow]Warning:[/yellow] angiography recording "
-            f"{recording.session_label!r} has a time dimension; averaging over it."
-        )
-        pwd = pwd.mean(dim="time")
-    mean_image = pwd.compute().fusi.scale.db()
-    _save_all_slices_map_plot(
-        mean_image,
-        output_paths["mean_power_doppler"],
-        "gray",
-        "Mean power Doppler (dB)",
-    )
-    return output_paths
-
-
 def _save_recording_plots(
     config: QcConfig,
     recording: PwdRecording,
     pwd: xr.DataArray,
 ) -> dict[str, Path]:
     """Save all QC plots for one recording."""
-    if recording.datatype == "angio":
-        return _save_angio_plots(config, recording, pwd)
     output_paths = get_qc_plot_paths(config, recording)
+    if recording.datatype == "angio":
+        if "time" in pwd.dims:
+            CONSOLE.log(
+                f"[yellow]Warning:[/yellow] angiography recording "
+                f"{recording.session_label!r} has a time dimension; averaging over it."
+            )
+            pwd = pwd.mean(dim="time")
+        mean_image = pwd.compute().fusi.scale.db()
+        _save_mean_volume_plot(
+            mean_image,
+            output_paths["mean_power_doppler"],
+            "gray",
+            "Mean power Doppler (dB)",
+        )
+        return output_paths
     mean_image = pwd.mean(dim="time").compute().fusi.scale.db()
     cv_map = compute_cv(pwd)
-    _save_map_plot(
+    _save_mean_volume_plot(
         mean_image,
         output_paths["mean_power_doppler"],
         "gray",
         "Mean power Doppler (dB)",
     )
-    _save_map_plot(cv_map, output_paths["cv"], "magma", "CV", vmin=0.0, vmax=1.0)
+    _save_mid_slice_plot(cv_map, output_paths["cv"], "magma", "CV", vmin=0.0, vmax=1.0)
     _save_carpet_plot(pwd, output_paths["carpet"])
     _save_dvars_plot(pwd, output_paths["dvars"])
     return output_paths
