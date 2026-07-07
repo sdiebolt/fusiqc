@@ -103,11 +103,11 @@ def _prepare_preview_map(data: xr.DataArray) -> tuple[xr.DataArray, str, float]:
     )
 
 
-def _get_map_figsize(preview: xr.DataArray, slice_mode: str) -> tuple[float, float]:
-    """Return a figure size that keeps the colorbar close to image height."""
+def _slice_aspect_ratio(preview: xr.DataArray, slice_mode: str) -> float | None:
+    """Return one slice's width/height ratio from its physical coordinate extents."""
     display_dims = [dim for dim in preview.dims if dim != slice_mode]
     if len(display_dims) != 2:
-        return (5.4, 4.8)
+        return None
     row_dim, col_dim = display_dims
     row_extent = float(preview.sizes[row_dim])
     col_extent = float(preview.sizes[col_dim])
@@ -118,8 +118,15 @@ def _get_map_figsize(preview: xr.DataArray, slice_mode: str) -> tuple[float, flo
         col_coords = np.asarray(preview.coords[col_dim].values, dtype=float)
         col_extent = float(np.abs(col_coords[-1] - col_coords[0]))
     if row_extent <= 0 or col_extent <= 0:
+        return None
+    return col_extent / row_extent
+
+
+def _get_map_figsize(preview: xr.DataArray, slice_mode: str) -> tuple[float, float]:
+    """Return a figure size that keeps the colorbar close to image height."""
+    image_aspect = _slice_aspect_ratio(preview, slice_mode)
+    if image_aspect is None:
         return (5.4, 4.8)
-    image_aspect = col_extent / row_extent
     figure_height = 4.8
     figure_width = float(np.clip(1.8 + figure_height * image_aspect, 5.0, 8.8))
     return figure_width, figure_height
@@ -152,6 +159,7 @@ def _save_mid_slice_plot(
             axes=np.asarray([[ax]]),
             cmap=cmap,
             show_titles=False,
+            show_axes=False,
             show_colorbar=True,
             cbar_label=cbar_label,
             vmin=vmin,
@@ -200,12 +208,35 @@ def _save_carpet_plot(power_doppler: xr.DataArray, output_path: Path) -> Path:
         plt.close(figure)
 
 
+# Approximate width:height ratio of the web app's quicklook viewer, used to pick a
+# grid shape that fills it without excess empty cells or unnecessary rows.
+_GRID_TARGET_ASPECT = 3.5
+
+
 def _mean_volume_grid_shape(preview: xr.DataArray, slice_mode: str) -> tuple[int, int]:
-    """Return (nrows, ncols) with roughly twice as many columns as rows."""
+    """Return (nrows, ncols) that fill a wide viewer given each slice's own aspect ratio."""
     n_slices = preview.sizes[slice_mode]
-    nrows = max(1, math.ceil(math.sqrt(n_slices / 2)))
+    slice_aspect = _slice_aspect_ratio(preview, slice_mode) or 1.0
+    columns_per_row = max(_GRID_TARGET_ASPECT / slice_aspect, 1.0)
+    nrows = max(1, math.ceil(math.sqrt(n_slices / columns_per_row)))
     ncols = math.ceil(n_slices / nrows)
     return nrows, ncols
+
+
+# Per-cell height, in inches, before accounting for each slice's own aspect ratio.
+_GRID_CELL_HEIGHT = 2.4
+# Extra width reserved for the shared colorbar.
+_GRID_COLORBAR_MARGIN = 1.2
+
+
+def _mean_volume_figsize(
+    nrows: int, ncols: int, slice_aspect: float | None
+) -> tuple[float, float]:
+    """Return a figure size that grows with the slice grid and each slice's aspect ratio."""
+    cell_width = _GRID_CELL_HEIGHT * (slice_aspect or 1.0)
+    figure_width = ncols * cell_width + _GRID_COLORBAR_MARGIN
+    figure_height = nrows * _GRID_CELL_HEIGHT
+    return figure_width, figure_height
 
 
 def _save_mean_volume_plot(
@@ -217,24 +248,31 @@ def _save_mean_volume_plot(
     """Save one dark-themed QC plot of a mean volume, showing every slice."""
     preview, slice_mode, _ = _prepare_preview_map(data)
     nrows, ncols = _mean_volume_grid_shape(preview, slice_mode)
-    plotter = cf.plotting.plot_volume(
-        preview,
-        slice_mode=slice_mode,
-        cmap=cmap,
-        vmax=0,
-        nrows=nrows,
-        ncols=ncols,
-        show_colorbar=True,
-        cbar_label=cbar_label,
-        show_axes=False,
-        show_titles=False,
+    slice_aspect = _slice_aspect_ratio(preview, slice_mode)
+    figure = plt.figure(
+        figsize=_mean_volume_figsize(nrows, ncols, slice_aspect),
+        constrained_layout=True,
     )
-    figure = cast(matplotlib.figure.Figure, plotter.figure)
-    figure.patch.set_alpha(0.0)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(output_path, dpi=150, bbox_inches="tight", transparent=True)
-    plt.close(figure)
-    return output_path
+    try:
+        figure.patch.set_alpha(0.0)
+        cf.plotting.plot_volume(
+            preview,
+            slice_mode=slice_mode,
+            cmap=cmap,
+            vmax=0,
+            nrows=nrows,
+            ncols=ncols,
+            figure=figure,
+            show_colorbar=True,
+            cbar_label=cbar_label,
+            show_axes=False,
+            show_titles=False,
+        )
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        figure.savefig(output_path, dpi=150, bbox_inches="tight", transparent=True)
+        return output_path
+    finally:
+        plt.close(figure)
 
 
 def _save_recording_plots(
