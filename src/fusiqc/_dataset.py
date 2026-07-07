@@ -12,6 +12,7 @@ from bids.layout import BIDSLayoutIndexer
 from fusiqc._config import QcConfig
 
 ALLOWED_PWD_SUFFIXES = ("_pwd.nii", "_pwd.nii.gz", "_pwd.zarr", "_pwd.scan")
+RECORDING_DATATYPES = ("fusi", "angio")
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class PwdRecording:
     session: str
     task: str
     run: str
+    datatype: str
 
 
 @lru_cache(maxsize=8)
@@ -54,7 +56,7 @@ def discover_pwd_recordings(config: QcConfig) -> list[PwdRecording]:
         pwd_path = Path(filename)
         if not pwd_path.name.endswith(ALLOWED_PWD_SUFFIXES):
             continue
-        if pwd_path.parent.name != "fusi":
+        if pwd_path.parent.name not in RECORDING_DATATYPES:
             continue
         entities = layout.parse_file_entities(str(pwd_path))
         recordings.append(
@@ -65,6 +67,7 @@ def discover_pwd_recordings(config: QcConfig) -> list[PwdRecording]:
                 session=str(entities.get("session", entities.get("ses", ""))),
                 task=str(entities.get("task", "")),
                 run=str(entities.get("run", "")),
+                datatype=pwd_path.parent.name,
             )
         )
     return recordings

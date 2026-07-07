@@ -29,6 +29,10 @@ from fusiqc._config import QcConfig
 from fusiqc._dataset import PwdRecording, discover_pwd_recordings
 
 QC_PANELS = ("mean_power_doppler", "cv", "carpet", "dvars")
+QC_PANELS_BY_DATATYPE = {
+    "fusi": QC_PANELS,
+    "angio": ("mean_power_doppler",),
+}
 QC_COLUMNS = (
     "pwd_path",
     "session_label",
@@ -36,6 +40,7 @@ QC_COLUMNS = (
     "session",
     "task",
     "run",
+    "datatype",
     "n_timepoints",
     "qc_status",
     "qc_notes",
@@ -62,13 +67,16 @@ def save_qc_table(config: QcConfig, table: pd.DataFrame) -> Path:
 
 
 def get_qc_plot_paths(config: QcConfig, recording: PwdRecording) -> dict[str, Path]:
-    """Return output paths for all QC panels."""
+    """Return output paths for the QC panels relevant to a recording's datatype."""
     base_dir = (
-        config.figures_dir / f"sub-{recording.subject}" / f"ses-{recording.session}"
+        config.figures_dir
+        / f"sub-{recording.subject}"
+        / f"ses-{recording.session}"
+        / recording.datatype
     )
+    panels = QC_PANELS_BY_DATATYPE.get(recording.datatype, QC_PANELS)
     return {
-        panel: base_dir / f"{recording.session_label}_{panel}.png"
-        for panel in QC_PANELS
+        panel: base_dir / f"{recording.session_label}_{panel}.png" for panel in panels
     }
 
 
@@ -135,8 +143,6 @@ def _save_map_plot(
         subfig = cast(matplotlib.figure.SubFigure, figure.subfigures(1, 1))
         subfig.patch.set_alpha(0.0)
         ax = subfig.subplots(1, 1)
-        if vmin is None or vmax is None:
-            vmin, vmax = np.nanpercentile(preview.values, [1.0, 99.0])
         cf.plotting.plot_volume(
             preview,
             slice_mode=slice_mode,
@@ -193,12 +199,60 @@ def _save_carpet_plot(power_doppler: xr.DataArray, output_path: Path) -> Path:
         plt.close(figure)
 
 
+def _save_all_slices_map_plot(
+    data: xr.DataArray,
+    output_path: Path,
+    cmap: str,
+    cbar_label: str,
+) -> Path:
+    """Save one dark-themed spatial QC plot showing every slice of a static volume."""
+    preview, slice_mode, _ = _prepare_preview_map(data)
+    plotter = cf.plotting.plot_volume(
+        preview,
+        slice_mode=slice_mode,
+        cmap=cmap,
+        show_colorbar=True,
+        cbar_label=cbar_label,
+    )
+    figure = cast(matplotlib.figure.Figure, plotter.figure)
+    figure.patch.set_alpha(0.0)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(output_path, dpi=150, bbox_inches="tight", transparent=True)
+    plt.close(figure)
+    return output_path
+
+
+def _save_angio_plots(
+    config: QcConfig,
+    recording: PwdRecording,
+    pwd: xr.DataArray,
+) -> dict[str, Path]:
+    """Save QC plots for one angiography recording (static volume, no temporal panels)."""
+    output_paths = get_qc_plot_paths(config, recording)
+    if "time" in pwd.dims:
+        CONSOLE.log(
+            f"[yellow]Warning:[/yellow] angiography recording "
+            f"{recording.session_label!r} has a time dimension; averaging over it."
+        )
+        pwd = pwd.mean(dim="time")
+    mean_image = pwd.compute().fusi.scale.db()
+    _save_all_slices_map_plot(
+        mean_image,
+        output_paths["mean_power_doppler"],
+        "gray",
+        "Mean power Doppler (dB)",
+    )
+    return output_paths
+
+
 def _save_recording_plots(
     config: QcConfig,
     recording: PwdRecording,
     pwd: xr.DataArray,
 ) -> dict[str, Path]:
     """Save all QC plots for one recording."""
+    if recording.datatype == "angio":
+        return _save_angio_plots(config, recording, pwd)
     output_paths = get_qc_plot_paths(config, recording)
     mean_image = pwd.mean(dim="time").compute().fusi.scale.db()
     cv_map = compute_cv(pwd)
@@ -235,17 +289,35 @@ def _refresh_one_recording(
         session=recording_dict["session"],
         task=recording_dict["task"],
         run=recording_dict["run"],
+        datatype=recording_dict["datatype"],
     )
-    if not force and _plots_exist(config, recording) and existing_row is not None:
-        return existing_row
-    pwd = cf.load(recording.pwd_path).compute()
-    if not _plots_exist(config, recording) or force:
-        _save_recording_plots(config, recording, pwd)
     qc_status = "pending"
     qc_notes = ""
+    cached_n_timepoints = None
     if existing_row is not None:
         qc_status = existing_row.get("qc_status", "") or "pending"
         qc_notes = existing_row.get("qc_notes", "") or ""
+        cached_n_timepoints = existing_row.get("n_timepoints") or None
+    if (
+        not force
+        and _plots_exist(config, recording)
+        and cached_n_timepoints is not None
+    ):
+        return {
+            "pwd_path": str(recording.pwd_path),
+            "session_label": recording.session_label,
+            "subject": recording.subject,
+            "session": recording.session,
+            "task": recording.task,
+            "run": recording.run,
+            "datatype": recording.datatype,
+            "n_timepoints": cached_n_timepoints,
+            "qc_status": qc_status,
+            "qc_notes": qc_notes,
+        }
+    pwd = cf.load(recording.pwd_path).compute()
+    if not _plots_exist(config, recording) or force:
+        _save_recording_plots(config, recording, pwd)
     return {
         "pwd_path": str(recording.pwd_path),
         "session_label": recording.session_label,
@@ -253,7 +325,8 @@ def _refresh_one_recording(
         "session": recording.session,
         "task": recording.task,
         "run": recording.run,
-        "n_timepoints": str(pwd.sizes["time"]),
+        "datatype": recording.datatype,
+        "n_timepoints": str(pwd.sizes.get("time", 1)),
         "qc_status": qc_status,
         "qc_notes": qc_notes,
     }
@@ -293,6 +366,7 @@ def refresh_qc_table(
                         "session": recording.session,
                         "task": recording.task,
                         "run": recording.run,
+                        "datatype": recording.datatype,
                     },
                     existing_rows.get(str(recording.pwd_path)),
                     force,
@@ -313,6 +387,7 @@ def refresh_qc_table(
                         "session": recording.session,
                         "task": recording.task,
                         "run": recording.run,
+                        "datatype": recording.datatype,
                     },
                     existing_rows.get(str(recording.pwd_path)),
                     force,
