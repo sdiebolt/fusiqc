@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from importlib.metadata import version
 from pathlib import Path
 
 from rich.console import Console
@@ -16,7 +17,20 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the CLI parser."""
     parser = argparse.ArgumentParser(
         prog="fusiqc",
-        description="Generate and review QC plots for a fUSI-BIDS dataset.",
+        description=(
+            "Generate QC plots for a fUSI-BIDS dataset and launch a local review "
+            "web app."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  fusiqc /path/to/bids-root\n"
+            "  fusiqc /path/to/bids-root --refresh --workers 30\n"
+            "  fusiqc /path/to/bids-root --no-browser"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {version('fusiqc')}"
     )
     parser.add_argument("bids_root", type=Path, help="Path to the BIDS dataset root.")
     parser.add_argument(
