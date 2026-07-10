@@ -20,7 +20,7 @@ inspection, and annotations are persisted to a TSV file for downstream analyses.
 ## Usage
 
 ```bash
-uv run fusiqc /path/to/bids-root
+uvx fusiqc /path/to/bids-root
 ```
 
 On first run, QC plots are generated for all recordings. Subsequent runs reuse existing
