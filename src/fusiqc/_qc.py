@@ -379,7 +379,8 @@ def refresh_qc_table(
     config: QcConfig, force: bool = False
 ) -> tuple[pd.DataFrame, Path]:
     """Refresh plots and the QC TSV."""
-    recordings = discover_pwd_recordings(config)
+    with CONSOLE.status(f"Scanning dataset {config.bids_root}...", spinner="dots"):
+        recordings = discover_pwd_recordings(config)
     if not recordings:
         raise FileNotFoundError(
             f"No supported *_pwd recordings found under {config.bids_root}."
