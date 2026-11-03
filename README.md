@@ -26,6 +26,24 @@ uvx fusiqc /path/to/bids-root
 On first run, QC plots are generated for all recordings. Subsequent runs reuse existing
 plots and only compute missing ones. Pass `--refresh` to force regeneration.
 
+Functional recordings in `fusi/` receive mean power Doppler, CV, carpet and DVARS
+panels. Structural images in `susi/` receive only a power Doppler preview, showing
+all elevation slices (including single-plane averages); no temporal metrics are
+computed. The older `angio/` directory name is also supported. Input data use
+ConfUSIus 0.9's native VoxelData geometry.
+
+To inspect a derivative dataset, pass its root as the input and optionally choose
+an output directory outside it:
+
+```bash
+uvx fusiqc /path/to/bids-root/derivatives/registration-averages \
+    --output-dir /path/to/bids-root/derivatives/visual-inspection/registration-averages
+```
+
+Existing `qc_status` and `qc_notes` values in `quality-control.tsv` are preserved
+when refreshing the same absolute `pwd_path`. Newly discovered images start as
+`pending`.
+
 ### Options
 
 | Flag | Default | Description |

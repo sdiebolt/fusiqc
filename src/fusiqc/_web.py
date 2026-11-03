@@ -24,7 +24,7 @@ from fusiqc._qc import (
 )
 
 QC_STATUSES = ("pending", "good", "bad")
-QC_DATATYPES = ("fusi", "angio")
+QC_DATATYPES = ("fusi", "susi", "angio")
 METADATA_FIELDS = (
     "session_label",
     "subject",
@@ -53,7 +53,12 @@ def _render_filter_chips(status_filter: str, counts: dict[str, int]) -> str:
 
 
 def _render_datatype_chips(datatype_filter: str, counts: dict[str, int]) -> str:
-    labels = (("all", "All datatypes"), ("fusi", "fUSI"), ("angio", "Angio"))
+    labels = (
+        ("all", "All datatypes"),
+        ("fusi", "fUSI"),
+        ("susi", "sUSI"),
+        ("angio", "Angio"),
+    )
     chips = []
     for value, label in labels:
         active_class = "active" if value == datatype_filter else ""
@@ -127,12 +132,13 @@ def _render_page(config: QcConfig, query: dict[str, list[str]]) -> str:
         "pending": int((status_scope["qc_status"] == "pending").sum()),
         "good": int((status_scope["qc_status"] == "good").sum()),
         "bad": int((status_scope["qc_status"] == "bad").sum()),
-        "all": int(len(status_scope)),
+        "all": len(status_scope),
     }
     datatype_counts = {
         "fusi": int((table["datatype"] == "fusi").sum()),
+        "susi": int((table["datatype"] == "susi").sum()),
         "angio": int((table["datatype"] == "angio").sum()),
-        "all": int(len(table)),
+        "all": len(table),
     }
     filter_mask = pd.Series(True, index=table.index)
     if status_filter != "all":
@@ -231,7 +237,7 @@ function getCurrentRow() {{ return qcRows[filteredRowIndices[currentPosition]]; 
 function panelsForRow(row) {{ return panelsByDatatype[row.datatype] || Object.keys(panelLabels); }}
 function qcPlotUrl(pwdPath, panel, datatype) {{ return `/qc_plot?pwd_path=${{encodeURIComponent(pwdPath)}}&panel=${{encodeURIComponent(panel)}}&datatype=${{encodeURIComponent(datatype)}}`; }}
 function updateUrl() {{ const params = new URLSearchParams({{ status: currentFilter, datatype: currentDatatypeFilter, index: String(currentPosition), panel: currentPanel }}); window.history.replaceState(null, '', `/?${{params.toString()}}`); }}
-function renderFilterCounts() {{ const statusScope = qcRows.filter((row) => currentDatatypeFilter === 'all' || row.datatype === currentDatatypeFilter); const statusCounts = {{ pending: 0, good: 0, bad: 0, all: statusScope.length }}; const datatypeCounts = {{ fusi: 0, angio: 0, all: qcRows.length }}; statusScope.forEach((row) => {{ if (row.qc_status in statusCounts) statusCounts[row.qc_status] += 1; }}); qcRows.forEach((row) => {{ if (row.datatype in datatypeCounts) datatypeCounts[row.datatype] += 1; }}); document.querySelectorAll('.filter-chip').forEach((chip) => {{ const kind = chip.dataset.filterKind; const value = chip.dataset.filterValue; const counts = kind === 'datatype' ? datatypeCounts : statusCounts; const active = kind === 'datatype' ? currentDatatypeFilter : currentFilter; chip.classList.toggle('active', value === active); const span = chip.querySelector('span'); if (span && value in counts) span.textContent = counts[value]; }}); }}
+function renderFilterCounts() {{ const statusScope = qcRows.filter((row) => currentDatatypeFilter === 'all' || row.datatype === currentDatatypeFilter); const statusCounts = {{ pending: 0, good: 0, bad: 0, all: statusScope.length }}; const datatypeCounts = {{ fusi: 0, susi: 0, angio: 0, all: qcRows.length }}; statusScope.forEach((row) => {{ if (row.qc_status in statusCounts) statusCounts[row.qc_status] += 1; }}); qcRows.forEach((row) => {{ if (row.datatype in datatypeCounts) datatypeCounts[row.datatype] += 1; }}); document.querySelectorAll('.filter-chip').forEach((chip) => {{ const kind = chip.dataset.filterKind; const value = chip.dataset.filterValue; const counts = kind === 'datatype' ? datatypeCounts : statusCounts; const active = kind === 'datatype' ? currentDatatypeFilter : currentFilter; chip.classList.toggle('active', value === active); const span = chip.querySelector('span'); if (span && value in counts) span.textContent = counts[value]; }}); }}
 function renderPanelTabs(row) {{ const panels = panelsForRow(row); if (!panels.includes(currentPanel)) currentPanel = panels[0]; panelTabs.innerHTML = panels.map((panel) => `<button type="button" class="panel-tab ${{panel === currentPanel ? 'active' : ''}}" data-panel="${{panel}}">${{panelLabels[panel]}}</button>`).join(''); panelTabs.querySelectorAll('[data-panel]').forEach((button) => {{ button.addEventListener('click', () => {{ currentPanel = button.dataset.panel; renderCurrentRow(false); }}); }}); }}
 function renderMetadata(row) {{ metadataTable.innerHTML = metadataFields.map((field) => `<tr><th>${{field}}</th><td>${{row[field] ?? ''}}</td></tr>`).join(''); }}
 function searchableText(row) {{ return [row.session_label, row.subject, row.session, row.task, row.run].filter(Boolean).join(' '); }}

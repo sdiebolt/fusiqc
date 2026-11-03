@@ -12,7 +12,7 @@ from bids.layout import BIDSLayoutIndexer
 from fusiqc._config import QcConfig
 
 ALLOWED_PWD_SUFFIXES = ("_pwd.nii", "_pwd.nii.gz", "_pwd.zarr", "_pwd.scan")
-RECORDING_DATATYPES = ("fusi", "angio")
+RECORDING_DATATYPES = ("fusi", "susi", "angio")
 
 
 @dataclass(frozen=True)

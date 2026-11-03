@@ -32,6 +32,7 @@ from fusiqc._dataset import PwdRecording, discover_pwd_recordings
 QC_PANELS = ("mean_power_doppler", "cv", "carpet", "dvars")
 QC_PANELS_BY_DATATYPE = {
     "fusi": QC_PANELS,
+    "susi": ("mean_power_doppler",),
     "angio": ("mean_power_doppler",),
 }
 QC_COLUMNS = (
@@ -89,37 +90,25 @@ def _default_workers() -> int:
 
 def _prepare_preview_map(data: xr.DataArray) -> tuple[xr.DataArray, str, float]:
     """Return a 3D preview volume plus slice settings for one spatial map."""
-    preview = data.squeeze()
-    if preview.ndim == 2:
-        return preview.expand_dims(z=[0.0]), "z", 0.0
-    if preview.ndim == 3:
-        return (
-            preview,
-            "z",
-            float(preview.coords["z"].values[len(preview.coords["z"]) // 2]),
+    if set(data.dims) != {"k", "j", "i"}:
+        raise ValueError(
+            f"Expected a spatial VoxelData map, got dimensions {data.dims}."
         )
-    raise ValueError(
-        f"Expected 2D or 3D preview map, got shape {preview.shape} with dims {list(preview.dims)}."
-    )
+    preview = data.transpose("k", "j", "i")
+    centre = np.array([(preview.sizes[dim] - 1) / 2 for dim in preview.dims] + [1])
+    slice_coord = float((preview.fusi.affine.voxel_to_world @ centre)[0])
+    return preview, "z", slice_coord
 
 
 def _slice_aspect_ratio(preview: xr.DataArray, slice_mode: str) -> float | None:
     """Return one slice's width/height ratio from its physical coordinate extents."""
-    display_dims = [dim for dim in preview.dims if dim != slice_mode]
-    if len(display_dims) != 2:
-        return None
+    display_dims = [dim for dim in ("z", "y", "x") if dim != slice_mode]
+    bounds = preview.fusi.affine.bounding_box
     row_dim, col_dim = display_dims
-    row_extent = float(preview.sizes[row_dim])
-    col_extent = float(preview.sizes[col_dim])
-    if row_dim in preview.coords and preview.coords[row_dim].size > 1:
-        row_coords = np.asarray(preview.coords[row_dim].values, dtype=float)
-        row_extent = float(np.abs(row_coords[-1] - row_coords[0]))
-    if col_dim in preview.coords and preview.coords[col_dim].size > 1:
-        col_coords = np.asarray(preview.coords[col_dim].values, dtype=float)
-        col_extent = float(np.abs(col_coords[-1] - col_coords[0]))
-    if row_extent <= 0 or col_extent <= 0:
-        return None
-    return col_extent / row_extent
+    extents = bounds.sel(bound="max") - bounds.sel(bound="min")
+    row_extent = float(extents.sel(component=row_dim))
+    col_extent = float(extents.sel(component=col_dim))
+    return col_extent / row_extent if row_extent > 0 and col_extent > 0 else None
 
 
 def _get_map_figsize(preview: xr.DataArray, slice_mode: str) -> tuple[float, float]:
@@ -215,7 +204,8 @@ _GRID_TARGET_ASPECT = 3.5
 
 def _mean_volume_grid_shape(preview: xr.DataArray, slice_mode: str) -> tuple[int, int]:
     """Return (nrows, ncols) that fill a wide viewer given each slice's own aspect ratio."""
-    n_slices = preview.sizes[slice_mode]
+    voxel_dim = {"z": "k", "y": "j", "x": "i"}[slice_mode]
+    n_slices = preview.sizes[voxel_dim]
     slice_aspect = _slice_aspect_ratio(preview, slice_mode) or 1.0
     columns_per_row = max(_GRID_TARGET_ASPECT / slice_aspect, 1.0)
     nrows = max(1, math.ceil(math.sqrt(n_slices / columns_per_row)))
@@ -282,10 +272,10 @@ def _save_recording_plots(
 ) -> dict[str, Path]:
     """Save all QC plots for one recording."""
     output_paths = get_qc_plot_paths(config, recording)
-    if recording.datatype == "angio":
+    if recording.datatype in {"susi", "angio"}:
         if "time" in pwd.dims:
             CONSOLE.log(
-                f"[yellow]Warning:[/yellow] angiography recording "
+                f"[yellow]Warning:[/yellow] structural recording "
                 f"{recording.session_label!r} has a time dimension; averaging over it."
             )
             pwd = pwd.mean(dim="time")
